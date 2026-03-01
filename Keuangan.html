@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Tabungan - Pemasukan & Pengeluaran</title>
+    <style>
+        /* --- CSS (Tampilan) --- */
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        .card {
+            background-color: white;
+            width: 380px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .saldo-container {
+            background: linear-gradient(135deg, #2c3e50, #3498db); /* Biru gelap elegan */
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .label-saldo {
+            font-size: 14px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .jumlah-saldo {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Area Input */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #38ef7d;
+        }
+
+        /* Tombol Utama */
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+        }
+
+        .btn-masuk {
+            background-color: #2ecc71;
+        }
+        .btn-masuk:hover { background-color: #27ae60; }
+
+        .btn-keluar {
+            background-color: #e74c3c;
+        }
+        .btn-keluar:hover { background-color: #c0392b; }
+
+        /* Riwayat Transaksi */
+        .riwayat-container {
+            margin-top: 20px;
+            text-align: left;
+            border-top: 2px solid #f1f1f1;
+            padding-top: 10px;
+        }
+
+        .riwayat-title {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .riwayat-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .riwayat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .text-masuk { color: #2ecc71; font-weight: bold; }
+        .text-keluar { color: #e74c3c; font-weight: bold; }
+        .text-ket { color: #555; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- --- HTML (Struktur) --- -->
+    <div class="card">
+        <h1>💰dompet Digital By edvan </h1>
+
+        <!-- Tampilan Saldo -->
+        <div class="saldo-container">
+            <div class="label-saldo">Total Saldo</div>
+            <div class="jumlah-saldo" id="tampilan-saldo">Rp 0</div>
+        </div>
+
+        <!-- Form Input -->
+        <div class="input-group">
+            <input type="text" id="keterangan" placeholder="Keterangan (contoh: Gaji / Beli Makan)">
+            <input type="number" id="jumlah" placeholder="Jumlah Uang (Rp)">
+        </div>
+
+        <!-- Tombol Aksi -->
+        <div class="button-container">
+            <button class="btn-masuk" onclick="transaksi('masuk')">+ Pemasukan</button>
+            <button class="btn-keluar" onclick="transaksi('keluar')">- Pengeluaran</button>
+        </div>
+
+        <!-- Riwayat -->
+        <div class="riwayat-container">
+            <div class="riwayat-title">RIWAYAT TRANSAKSI</div>
+            <div class="riwayat-list" id="daftar-riwayat">
+                <!-- Transaksi akan muncul di sini -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- JavaScript (Logika) --- */
+
+        let saldoTotal = 0;
+
+        // Fungsi format Rupiah
+        function formatRupiah(angka) {
+            return "Rp " + angka.toLocaleString('id-ID');
+        }
+
+        // Fungsi Utama: Menangani Pemasukan & Pengeluaran
+        function transaksi(jenis) {
+            const inputJumlah = document.getElementById('jumlah');
+            const inputKeterangan = document.getElementById('keterangan');
+            const nilai = parseFloat(inputJumlah.value);
+
+            // Validasi input
+            if (inputKeterangan.value === "" || isNaN(nilai) || nilai <= 0) {
+                alert("Mohon masukkan jumlah yang valid!");
+                return;
+            }
+
+            // Logika Pengurangan/Penambahan Saldo
+            if (jenis === 'masuk') {
+                saldoTotal += nilai;
+            } else {
+                if (nilai > saldoTotal) {
+                    alert("Saldo tidak cukup untuk pengeluaran ini!");
+                    return;
+                }
+                saldoTotal -= nilai;
+            }
+
+            // Update Tampilan Saldo
+            document.getElementById('tampilan-saldo').innerText = formatRupiah(saldoTotal);
+
+            // Update Warna Saldo (Biru jika banyak, Merah jika minus/berikutnya)
+            const saldoEl = document.getElementById('tampilan-saldo');
+
+            // Tambahkan ke Riwayat
+            const listRiwayat = document.getElementById('daftar-riwayat');
+            const itemBaru = document.createElement('div');
+            itemBaru.className = 'riwayat-item';
+            
+            const simbol = jenis === 'masuk' ? '+' : '-';
+            const warnaClass = jenis === 'masuk' ? 'text-masuk' : 'text-keluar';
+            const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            itemBaru.innerHTML = `
+                <div>
+                    <div class="text-ket">${inputKeterangan.value}</div>
+                    <small style="color:#aaa">${waktu}</small>
+                </div>
+                <div class="${warnaClass}">${simbol}${formatRupiah(nilai)}</div>
+            `;
+
+            // Masukkan di paling atas
+            listRiwayat.prepend(itemBaru);
+
+            // Reset Form
+            inputJumlah.value = '';
+            inputKeterangan.value = '';
+            inputKeterangan.focus();
+        }
+    </script>
+
+</body>
+</html>
